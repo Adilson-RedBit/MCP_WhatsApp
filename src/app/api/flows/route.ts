@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import { getFlowTemplate } from '@/lib/flows/templates'
+import { DEFAULT_LOCALE, translate } from '@/lib/i18n'
 
 /**
  * GET /api/flows — list the caller's flows.
@@ -90,7 +91,11 @@ export async function POST(request: Request) {
 
   // -------- Template clone path --------
   if (body.template_slug) {
-    const template = getFlowTemplate(body.template_slug)
+    // No request-scoped locale on this server route, so templates
+    // fall back to the app's default/source language (pt-BR).
+    const template = getFlowTemplate(body.template_slug, (key) =>
+      translate(DEFAULT_LOCALE, key),
+    )
     if (!template) {
       return NextResponse.json(
         { error: `Unknown template_slug "${body.template_slug}"` },

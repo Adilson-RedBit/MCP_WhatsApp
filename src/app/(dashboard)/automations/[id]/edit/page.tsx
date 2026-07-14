@@ -10,6 +10,7 @@ import {
   type BuilderInitial,
   type ServerStepNode,
 } from "@/components/automations/automation-builder"
+import { useLocale } from "@/hooks/use-locale"
 import type { AutomationTriggerType } from "@/types"
 
 export default function EditAutomationPage({
@@ -19,6 +20,7 @@ export default function EditAutomationPage({
 }) {
   const { id } = use(params)
   const router = useRouter()
+  const { t } = useLocale()
   const [initial, setInitial] = useState<BuilderInitial | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,7 +29,7 @@ export default function EditAutomationPage({
     async function load() {
       const res = await fetch(`/api/automations/${id}`)
       if (!res.ok) {
-        if (!cancelled) setError(`Failed to load (${res.status})`)
+        if (!cancelled) setError(t("auto.edit.loadFailed").replace("{status}", String(res.status)))
         return
       }
       const body = await res.json()
@@ -56,7 +58,7 @@ export default function EditAutomationPage({
           onClick={() => router.push("/automations")}
           className="text-sm text-primary hover:text-primary/80"
         >
-          Back to Automations
+          {t("auto.edit.backToAutomations")}
         </button>
       </div>
     )

@@ -147,7 +147,22 @@ html[data-mode="light"] {
 
 /* ---- ACCENT: primary color ---- */
 
+/* Verde WhatsApp (#25D366) — tema padrão RedBit CRM */
 :root,
+html[data-theme="green"] {
+  --primary: oklch(0.765 0.178 147);
+  --primary-foreground: oklch(0.12 0.02 147);
+  --primary-hover: oklch(0.82 0.16 147);
+  --primary-soft: oklch(0.765 0.178 147 / 0.12);
+  --primary-soft-2: oklch(0.765 0.178 147 / 0.22);
+  --ring: oklch(0.765 0.178 147);
+  --chart-1: oklch(0.765 0.178 147);
+  --chart-2: oklch(0.7 0.15 160);
+  --sidebar-primary: oklch(0.765 0.178 147);
+  --sidebar-primary-foreground: oklch(0.12 0.02 147);
+  --sidebar-ring: oklch(0.765 0.178 147);
+}
+
 html[data-theme="violet"] {
   --primary: oklch(0.526 0.247 293);
   --primary-foreground: oklch(0.985 0 0);

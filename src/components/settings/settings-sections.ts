@@ -37,31 +37,35 @@ export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export const DEFAULT_SECTION: SettingsSection = 'overview';
 
-/** Rail grouping. `adminOnly` items are hidden for non-admins. */
+/**
+ * Rail grouping. `labelKey` é uma chave de tradução (src/lib/i18n.ts)
+ * resolvida pelos consumidores via useLocale().t — assim o rail e a
+ * visão geral seguem o idioma escolhido em Configurações → Aparência.
+ */
 export interface SectionMeta {
   id: SettingsSection;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
   group: 'top' | 'account' | 'workspace';
 }
 
 export const SECTION_META: Record<SettingsSection, SectionMeta> = {
-  overview: { id: 'overview', label: 'Overview', icon: LayoutGrid, group: 'top' },
-  profile: { id: 'profile', label: 'Your profile', icon: User, group: 'account' },
-  security: { id: 'security', label: 'Login & security', icon: Shield, group: 'account' },
-  appearance: { id: 'appearance', label: 'Appearance', icon: Palette, group: 'account' },
-  whatsapp: { id: 'whatsapp', label: 'WhatsApp', icon: PlugZap, group: 'workspace' },
-  templates: { id: 'templates', label: 'Templates', icon: FileText, group: 'workspace' },
-  fields: { id: 'fields', label: 'Fields & tags', icon: Tags, group: 'workspace' },
-  deals: { id: 'deals', label: 'Deals & currency', icon: Coins, group: 'workspace' },
-  members: { id: 'members', label: 'Team members', icon: UsersRound, group: 'workspace' },
-  api: { id: 'api', label: 'API keys', icon: KeyRound, group: 'workspace' },
+  overview: { id: 'overview', labelKey: 'settings.section.overview', icon: LayoutGrid, group: 'top' },
+  profile: { id: 'profile', labelKey: 'settings.section.profile', icon: User, group: 'account' },
+  security: { id: 'security', labelKey: 'settings.section.security', icon: Shield, group: 'account' },
+  appearance: { id: 'appearance', labelKey: 'settings.section.appearance', icon: Palette, group: 'account' },
+  whatsapp: { id: 'whatsapp', labelKey: 'settings.section.whatsapp', icon: PlugZap, group: 'workspace' },
+  templates: { id: 'templates', labelKey: 'settings.section.templates', icon: FileText, group: 'workspace' },
+  fields: { id: 'fields', labelKey: 'settings.section.fields', icon: Tags, group: 'workspace' },
+  deals: { id: 'deals', labelKey: 'settings.section.deals', icon: Coins, group: 'workspace' },
+  members: { id: 'members', labelKey: 'settings.section.members', icon: UsersRound, group: 'workspace' },
+  api: { id: 'api', labelKey: 'settings.section.api', icon: KeyRound, group: 'workspace' },
 };
 
-export const RAIL_GROUPS: { label: string | null; group: SectionMeta['group'] }[] = [
-  { label: null, group: 'top' },
-  { label: 'Account', group: 'account' },
-  { label: 'Workspace', group: 'workspace' },
+export const RAIL_GROUPS: { labelKey: string | null; group: SectionMeta['group'] }[] = [
+  { labelKey: null, group: 'top' },
+  { labelKey: 'settings.group.account', group: 'account' },
+  { labelKey: 'settings.group.workspace', group: 'workspace' },
 ];
 
 function isSection(value: string | null): value is SettingsSection {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { getTemplate } from '@/lib/automations/templates'
+import { DEFAULT_LOCALE, translate } from '@/lib/i18n'
 import { insertSteps, type BuilderStepInput } from '@/lib/automations/steps-tree'
 import {
   validateStepsForActivation,
@@ -58,13 +59,16 @@ export async function POST(request: Request) {
   let effectiveTriggerConfig = trigger_config
 
   if (template && (!steps || steps.length === 0)) {
-    const t = getTemplate(template)
-    if (t) {
-      effectiveName = effectiveName ?? t.name
-      effectiveDescription = effectiveDescription ?? t.description
-      effectiveTriggerType = effectiveTriggerType ?? t.trigger_type
-      effectiveTriggerConfig = effectiveTriggerConfig ?? t.trigger_config
-      effectiveSteps = t.steps as unknown as BuilderStepInput[]
+    // No request-scoped locale on this server route, so templates fall
+    // back to the app's default/source language (pt-BR) when a name/
+    // description isn't explicitly supplied by the caller.
+    const tpl = getTemplate(template, (key) => translate(DEFAULT_LOCALE, key))
+    if (tpl) {
+      effectiveName = effectiveName ?? tpl.name
+      effectiveDescription = effectiveDescription ?? tpl.description
+      effectiveTriggerType = effectiveTriggerType ?? tpl.trigger_type
+      effectiveTriggerConfig = effectiveTriggerConfig ?? tpl.trigger_config
+      effectiveSteps = tpl.steps as unknown as BuilderStepInput[]
     }
   }
 

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { LocaleProvider } from "@/hooks/use-locale";
 import { ThemedToaster } from "@/components/themed-toaster";
 import {
   DEFAULT_MODE,
@@ -20,10 +21,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "RedBit CRM",
+    template: "%s — RedBit CRM",
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: "CRM WhatsApp para sua equipe — caixa de entrada compartilhada, contatos, pipelines e automações.",
   robots: {
     index: false,
     follow: false,
@@ -82,7 +83,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       data-theme={DEFAULT_THEME}
       data-mode={DEFAULT_MODE}
       className={`${inter.variable} h-full antialiased`}
@@ -104,8 +105,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-background text-foreground font-sans">
         <ThemeProvider>
-          {children}
-          <ThemedToaster />
+          <LocaleProvider>
+            {children}
+            <ThemedToaster />
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

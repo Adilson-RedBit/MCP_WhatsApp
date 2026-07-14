@@ -1,12 +1,7 @@
 import { ImageResponse } from "next/og";
 
-// Replaces the default Next.js favicon with the brand mark — Hostinger
-// violet rounded square + white chat-square glyph — matching the
-// sidebar logo in `src/components/layout/sidebar.tsx`. Next.js renders
-// this at build time and auto-injects <link rel="icon"> into <head>.
-//
-// This route takes precedence over src/app/favicon.ico, which is the
-// Next.js default and can stay on disk harmlessly (or be removed).
+// Ícone do RedBit CRM — quadrado verde arredondado + ícone de mensagem branco.
+// Next.js renderiza isso em build time e injeta <link rel="icon"> no <head>.
 
 export const runtime = "edge";
 export const size = { width: 32, height: 32 };
@@ -22,7 +17,7 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#7c3aed", // primary (Hostinger-aligned purple)
+          background: "#25D366", // verde WhatsApp (RedBit CRM brand)
           borderRadius: 6,
         }}
       >

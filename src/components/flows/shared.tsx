@@ -65,53 +65,57 @@ export interface BuilderNode {
 // the user sees a node summary.
 // ============================================================
 
-export const NODE_META: Record<
-  NodeType,
-  { label: string; icon: typeof Workflow; color: string }
-> = {
-  start: { label: "Start", icon: PlayCircle, color: "text-emerald-400" },
-  send_message: {
-    label: "Send message",
-    icon: MessageCircle,
-    color: "text-sky-400",
-  },
-  send_buttons: {
-    label: "Send buttons",
-    icon: ListChecks,
-    color: "text-primary",
-  },
-  send_list: {
-    label: "Send list",
-    icon: ListPlus,
-    color: "text-indigo-400",
-  },
-  send_media: {
-    label: "Send media",
-    icon: Paperclip,
-    color: "text-cyan-400",
-  },
-  collect_input: {
-    label: "Collect input",
-    icon: Inbox,
-    color: "text-teal-400",
-  },
-  condition: {
-    label: "If / else",
-    icon: GitFork,
-    color: "text-fuchsia-400",
-  },
-  set_tag: {
-    label: "Tag contact",
-    icon: Tag,
-    color: "text-pink-400",
-  },
-  handoff: {
-    label: "Handoff to agent",
-    icon: UserPlus,
-    color: "text-amber-400",
-  },
-  end: { label: "End", icon: Flag, color: "text-muted-foreground" },
-};
+/** Node labels depend on the active locale, so this builds the
+ *  metadata table on demand from `t` instead of living as a
+ *  module-level constant. */
+export function getNodeMeta(
+  t: (key: string) => string,
+): Record<NodeType, { label: string; icon: typeof Workflow; color: string }> {
+  return {
+    start: { label: t("flow.node.start"), icon: PlayCircle, color: "text-emerald-400" },
+    send_message: {
+      label: t("flow.node.sendMessage"),
+      icon: MessageCircle,
+      color: "text-sky-400",
+    },
+    send_buttons: {
+      label: t("flow.node.sendButtons"),
+      icon: ListChecks,
+      color: "text-primary",
+    },
+    send_list: {
+      label: t("flow.node.sendList"),
+      icon: ListPlus,
+      color: "text-indigo-400",
+    },
+    send_media: {
+      label: t("flow.node.sendMedia"),
+      icon: Paperclip,
+      color: "text-cyan-400",
+    },
+    collect_input: {
+      label: t("flow.node.collectInput"),
+      icon: Inbox,
+      color: "text-teal-400",
+    },
+    condition: {
+      label: t("flow.node.condition"),
+      icon: GitFork,
+      color: "text-fuchsia-400",
+    },
+    set_tag: {
+      label: t("flow.node.setTag"),
+      icon: Tag,
+      color: "text-pink-400",
+    },
+    handoff: {
+      label: t("flow.node.handoff"),
+      icon: UserPlus,
+      color: "text-amber-400",
+    },
+    end: { label: t("flow.node.end"), icon: Flag, color: "text-muted-foreground" },
+  };
+}
 
 // ============================================================
 // Pure editing helpers — used by forms in both views.
@@ -145,7 +149,10 @@ export function truncate(s: string, max = 80): string {
   return clean.slice(0, max - 1) + "…";
 }
 
-export function summarizeNode(node: BuilderNode): string | null {
+export function summarizeNode(
+  node: BuilderNode,
+  t: (key: string) => string,
+): string | null {
   const cfg = node.config;
   switch (node.node_type) {
     case "start":
@@ -178,14 +185,25 @@ export function summarizeNode(node: BuilderNode): string | null {
         const rows = Array.isArray(s.rows) ? s.rows : [];
         return sum + rows.length;
       }, 0);
+      const optionWord = t(
+        rowCount === 1
+          ? "flow.node.summary.optionSingular"
+          : "flow.node.summary.optionPlural",
+      );
       if (text.length > 0) {
         return rowCount > 0
-          ? `${truncate(text, 50)} · ${rowCount} option${rowCount === 1 ? "" : "s"}`
+          ? `${truncate(text, 50)} · ${rowCount} ${optionWord}`
           : truncate(text);
       }
-      return rowCount > 0
-        ? `${rowCount} option${rowCount === 1 ? "" : "s"} across ${sections.length} section${sections.length === 1 ? "" : "s"}`
-        : null;
+      if (rowCount === 0) return null;
+      const sectionWord = t(
+        sections.length === 1
+          ? "flow.node.summary.sectionSingular"
+          : "flow.node.summary.sectionPlural",
+      );
+      return t("flow.node.summary.optionsAcrossSections")
+        .replace("{options}", `${rowCount} ${optionWord}`)
+        .replace("{sections}", `${sections.length} ${sectionWord}`);
     }
     case "send_media": {
       const mediaType =
@@ -193,10 +211,17 @@ export function summarizeNode(node: BuilderNode): string | null {
       const filename = typeof cfg.filename === "string" ? cfg.filename : "";
       const url = typeof cfg.media_url === "string" ? cfg.media_url : "";
       const caption = typeof cfg.caption === "string" ? cfg.caption : "";
-      const label = mediaType
-        ? mediaType.charAt(0).toUpperCase() + mediaType.slice(1)
-        : "Media";
-      if (!url) return `${label} (no file uploaded)`;
+      const label =
+        mediaType === "image"
+          ? t("flow.node.summary.media.image")
+          : mediaType === "video"
+            ? t("flow.node.summary.media.video")
+            : mediaType === "document"
+              ? t("flow.node.summary.media.document")
+              : t("flow.node.summary.media.generic");
+      if (!url) {
+        return t("flow.node.summary.media.noFile").replace("{label}", label);
+      }
       const name = filename || url.split("/").pop() || "file";
       return caption
         ? `${label}: ${truncate(name, 30)} · ${truncate(caption, 40)}`
@@ -221,16 +246,18 @@ export function summarizeNode(node: BuilderNode): string | null {
             ? "field"
             : "var";
       const subjectStr =
-        subject === "tag" ? `has tag ${truncate(subjectKey, 24)}` : `${subject}.${subjectKey}`;
+        subject === "tag"
+          ? t("flow.node.summary.hasTag").replace("{key}", truncate(subjectKey, 24))
+          : `${subject}.${subjectKey}`;
       const op =
         cfg.operator === "equals"
           ? "=="
           : cfg.operator === "contains"
-            ? "contains"
+            ? t("flow.node.summary.op.contains")
             : cfg.operator === "present"
-              ? "exists"
+              ? t("flow.node.summary.op.exists")
               : cfg.operator === "absent"
-                ? "missing"
+                ? t("flow.node.summary.op.missing")
                 : "";
       const value = typeof cfg.value === "string" ? cfg.value : "";
       const valStr =
@@ -240,12 +267,18 @@ export function summarizeNode(node: BuilderNode): string | null {
       return subject === "tag" ? subjectStr : `${subjectStr} ${op}${valStr}`;
     }
     case "set_tag": {
-      const mode = cfg.mode === "remove" ? "Remove" : "Add";
+      const mode = cfg.mode === "remove"
+        ? t("flow.node.summary.setTag.remove")
+        : t("flow.node.summary.setTag.add");
       const tagId = typeof cfg.tag_id === "string" ? cfg.tag_id : "";
       // No tag name available without an async lookup here; show a
       // short prefix of the UUID so users can disambiguate between
       // multiple set_tag nodes at a glance.
-      return tagId ? `${mode} tag ${tagId.slice(0, 8)}…` : `${mode} tag (none picked)`;
+      return tagId
+        ? t("flow.node.summary.tagPreview")
+            .replace("{mode}", mode)
+            .replace("{id}", tagId.slice(0, 8))
+        : t("flow.node.summary.tagNoneSet").replace("{mode}", mode);
     }
     case "handoff": {
       const note = typeof cfg.note === "string" ? cfg.note : "";

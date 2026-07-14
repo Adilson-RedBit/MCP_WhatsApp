@@ -67,14 +67,21 @@ export interface FlowTemplate {
   nodes: FlowTemplateNode[];
 }
 
+/** Template name/description depend on the active locale, so the
+ *  registry is built on demand from `t` instead of living as
+ *  module-level constants. Node content (seed message text, button
+ *  titles, etc.) stays untranslated — it's starter content the user
+ *  edits after cloning, mirroring the automations template pattern. */
+type T = (key: string) => string;
+
 // ============================================================
 // 1. Welcome menu — the example from the owner's brief
 // ============================================================
-const WELCOME_MENU: FlowTemplate = {
+function welcomeMenu(t: T): FlowTemplate {
+  return {
   slug: "welcome_menu",
-  name: "Welcome menu",
-  description:
-    "Greet customers who type a keyword and route them to the right agent based on whether they're new or existing.",
+  name: t("flow.template.welcomeMenu.name"),
+  description: t("flow.template.welcomeMenu.description"),
   icon: "MessageSquare",
   trigger_type: "keyword",
   trigger_config: { keywords: ["support", "help", "hi"], match_type: "contains" },
@@ -120,16 +127,17 @@ const WELCOME_MENU: FlowTemplate = {
       } as HandoffNodeConfig,
     },
   ],
-};
+  };
+}
 
 // ============================================================
 // 2. FAQ bot — list-message answers, fully automated
 // ============================================================
-const FAQ_BOT: FlowTemplate = {
+function faqBot(t: T): FlowTemplate {
+  return {
   slug: "faq_bot",
-  name: "FAQ bot",
-  description:
-    "Answer common questions automatically. Customer picks a topic from a list; the bot replies with the answer and ends.",
+  name: t("flow.template.faqBot.name"),
+  description: t("flow.template.faqBot.description"),
   icon: "HelpCircle",
   trigger_type: "keyword",
   trigger_config: {
@@ -220,16 +228,17 @@ const FAQ_BOT: FlowTemplate = {
       config: {},
     },
   ],
-};
+  };
+}
 
 // ============================================================
 // 3. Lead capture — collect_input chain, ends in a handoff
 // ============================================================
-const LEAD_CAPTURE: FlowTemplate = {
+function leadCapture(t: T): FlowTemplate {
+  return {
   slug: "lead_capture",
-  name: "Lead capture",
-  description:
-    "Greet first-time inbounds, capture name + email + company, then hand off to sales with the answers in the note.",
+  name: t("flow.template.leadCapture.name"),
+  description: t("flow.template.leadCapture.description"),
   icon: "UserPlus",
   trigger_type: "first_inbound_message",
   trigger_config: {},
@@ -283,22 +292,28 @@ const LEAD_CAPTURE: FlowTemplate = {
       } as HandoffNodeConfig,
     },
   ],
-};
+  };
+}
 
 // ============================================================
 // Registry
 // ============================================================
 
-const TEMPLATES: Record<string, FlowTemplate> = {
-  welcome_menu: WELCOME_MENU,
-  faq_bot: FAQ_BOT,
-  lead_capture: LEAD_CAPTURE,
-};
-
-export function getFlowTemplate(slug: string): FlowTemplate | null {
-  return TEMPLATES[slug] ?? null;
+/** Template name/description depend on the active locale, so this
+ *  builds the registry on demand from `t` instead of living as a
+ *  module-level constant. */
+function getTemplates(t: T): Record<string, FlowTemplate> {
+  return {
+    welcome_menu: welcomeMenu(t),
+    faq_bot: faqBot(t),
+    lead_capture: leadCapture(t),
+  };
 }
 
-export function listFlowTemplates(): FlowTemplate[] {
-  return Object.values(TEMPLATES);
+export function getFlowTemplate(slug: string, t: T): FlowTemplate | null {
+  return getTemplates(t)[slug] ?? null;
+}
+
+export function listFlowTemplates(t: T): FlowTemplate[] {
+  return Object.values(getTemplates(t));
 }

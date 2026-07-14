@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocale } from "@/hooks/use-locale";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import {
   Crown,
@@ -22,6 +23,7 @@ import {
   Workflow,
   X,
   Zap,
+  Target,
 } from "lucide-react";
 import type { AccountRole } from "@/lib/auth/roles";
 
@@ -31,33 +33,29 @@ import type { AccountRole } from "@/lib/auth/roles";
 // wants to recolour "agent" rows, this is the one diff.
 const ROLE_CHIP: Record<
   AccountRole,
-  { icon: typeof Crown; label: string; className: string }
+  { icon: typeof Crown; labelKey: string; className: string }
 > = {
   owner: {
     icon: Crown,
-    label: "Owner",
-    // Amber: scarce, immutable, "the boss" — gets visual emphasis.
+    labelKey: "role.owner",
     className:
       "border-amber-500/40 bg-amber-500/10 text-amber-300",
   },
   admin: {
     icon: Shield,
-    label: "Admin",
-    // Primary-tinted: significant but not as scarce as owner.
+    labelKey: "role.admin",
     className:
       "border-primary/40 bg-primary/10 text-primary",
   },
   agent: {
     icon: UserCog,
-    label: "Agent",
-    // Neutral slate: the operational default.
+    labelKey: "role.agent",
     className:
       "border-border bg-muted text-foreground",
   },
   viewer: {
     icon: User,
-    label: "Viewer",
-    // Muted slate: read-only role; visually quieter than agent.
+    labelKey: "role.viewer",
     className:
       "border-border bg-card text-muted-foreground",
   },
@@ -77,7 +75,8 @@ import {
 
 interface NavItem {
   href: string;
-  label: string;
+  /** Chave de tradução (src/lib/i18n.ts) resolvida via useLocale().t */
+  labelKey: string;
   icon: typeof LayoutDashboard;
   /**
    * When true, the nav row renders a small "Beta" chip after the label.
@@ -87,17 +86,18 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/inbox", label: "Inbox", icon: MessageSquare },
-  { href: "/contacts", label: "Contacts", icon: Users },
-  { href: "/pipelines", label: "Pipelines", icon: GitBranch },
-  { href: "/broadcasts", label: "Broadcasts", icon: Radio },
-  { href: "/automations", label: "Automations", icon: Zap },
-  { href: "/flows", label: "Flows", icon: Workflow, beta: true },
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/inbox", labelKey: "nav.inbox", icon: MessageSquare },
+  { href: "/contacts", labelKey: "nav.contacts", icon: Users },
+  { href: "/pipelines", labelKey: "nav.pipelines", icon: GitBranch },
+  { href: "/broadcasts", labelKey: "nav.broadcasts", icon: Radio },
+  { href: "/automations", labelKey: "nav.automations", icon: Zap },
+  { href: "/flows", labelKey: "nav.flows", icon: Workflow, beta: true },
+  { href: "/prospeccao", labelKey: "nav.prospecting", icon: Target, beta: true },
 ];
 
-const bottomNavItems = [
-  { href: "/settings", label: "Settings", icon: Settings },
+const bottomNavItems: NavItem[] = [
+  { href: "/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 interface SidebarProps {
@@ -109,6 +109,7 @@ interface SidebarProps {
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { profile, profileLoading, account, accountRole, signOut } = useAuth();
+  const { t } = useLocale();
   const totalUnread = useTotalUnread();
   // Only surface the account-name strip when it actually carries
   // information. A solo user's personal account is named after them
@@ -183,7 +184,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               <MessageSquare className="h-4 w-4" />
             </div>
             <span className="text-sm font-semibold text-foreground">
-              CRM Template for WhatsApp
+              RedBit CRM
             </span>
           </Link>
           <button
@@ -220,7 +221,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{item.label}</span>
+                    <span className="flex-1">{t(item.labelKey)}</span>
                     {item.beta && (
                       <span
                         aria-label="Beta feature"
@@ -261,7 +262,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 </li>
               );
@@ -299,7 +300,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                       className={`ml-auto inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${meta.className}`}
                     >
                       <Icon className="size-3" />
-                      {meta.label}
+                      {t(meta.labelKey)}
                     </span>
                   );
                 })()
@@ -346,7 +347,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 }
               >
                 <User className="size-4" />
-                Profile
+                {t("menu.profile")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 render={
@@ -358,7 +359,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 }
               >
                 <Settings className="size-4" />
-                Settings
+                {t("menu.settings")}
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
@@ -366,7 +367,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
               >
                 <LogOut className="size-4" />
-                Sign out
+                {t("menu.signout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

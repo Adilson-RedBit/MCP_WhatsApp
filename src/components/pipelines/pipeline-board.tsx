@@ -19,6 +19,7 @@ import { DealCard } from "./deal-card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocale } from "@/hooks/use-locale";
 import { formatCurrency } from "@/lib/currency";
 
 interface PipelineBoardProps {
@@ -200,6 +201,7 @@ function StageColumn({
   onAddDeal: (stageId: string) => void;
   onEditDeal: (deal: Deal) => void;
 }) {
+  const { t } = useLocale();
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   return (
@@ -237,7 +239,7 @@ function StageColumn({
       >
         {deals.length === 0 ? (
           <div className="flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-border py-10 text-xs text-muted-foreground">
-            Drop a deal here
+            {t("pipelines.board.dropHere")}
           </div>
         ) : (
           deals.map((deal) => (
@@ -258,7 +260,7 @@ function StageColumn({
         className="mt-3 w-full justify-start border border-dashed border-border bg-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
       >
         <Plus className="mr-1 h-3 w-3" />
-        Add Deal
+        {t("pipelines.board.addDeal")}
       </Button>
     </div>
   );

@@ -1,17 +1,17 @@
 {
-  "name": "wacrm",
+  "name": "redbit-crm",
   "version": "0.2.2",
   "private": true,
-  "description": "Self-hostable CRM template for WhatsApp built on Next.js and Supabase — shared inbox, contacts, sales pipelines, broadcasts, and no-code automations.",
+  "description": "CRM WhatsApp para equipes — caixa de entrada compartilhada, contatos, pipelines de vendas, disparos e automações sem código.",
   "license": "MIT",
-  "author": "Arnas Donauskas",
-  "homepage": "https://github.com/ArnasDon/wacrm",
+  "author": "Adilson Paula Souza",
+  "homepage": "https://github.com/Adilson-RedBit/MCP_WhatsApp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ArnasDon/wacrm.git"
+    "url": "git+https://github.com/Adilson-RedBit/MCP_WhatsApp.git"
   },
   "bugs": {
-    "url": "https://github.com/ArnasDon/wacrm/issues"
+    "url": "https://github.com/Adilson-RedBit/MCP_WhatsApp/issues"
   },
   "keywords": [
     "crm",

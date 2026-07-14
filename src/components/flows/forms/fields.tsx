@@ -28,7 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { NODE_META, type BuilderNode } from "../shared";
+import { getNodeMeta, type BuilderNode } from "../shared";
+import { useLocale } from "@/hooks/use-locale";
 
 export function TextRow({
   label,
@@ -75,6 +76,7 @@ export function NextNodeRow({
   onChange: (v: string) => void;
   label: string;
 }) {
+  const { t } = useLocale();
   return (
     <div>
       <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
@@ -83,7 +85,7 @@ export function NextNodeRow({
         nodes={allNodes}
         excludeKey={currentKey}
         onChange={(v) => onChange(v ?? "")}
-        placeholder="Pick a next node…"
+        placeholder={t("flow.field.nextNodePh")}
       />
     </div>
   );
@@ -104,6 +106,8 @@ export function NodeKeySelect({
   placeholder?: string;
   className?: string;
 }) {
+  const { t } = useLocale();
+  const meta = getNodeMeta(t);
   const options = nodes.filter((n) => n.node_key !== excludeKey);
   return (
     <Select
@@ -114,14 +118,14 @@ export function NodeKeySelect({
         <SelectValue placeholder={placeholder ?? "—"} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="__none__">— None —</SelectItem>
+        <SelectItem value="__none__">{t("flow.field.noneOption")}</SelectItem>
         {options.map((n) => {
-          const Icon = NODE_META[n.node_type].icon;
+          const Icon = meta[n.node_type].icon;
           return (
             <SelectItem key={n.node_key} value={n.node_key}>
               <span className="inline-flex items-center gap-1.5">
                 <Icon
-                  className={cn("h-3 w-3", NODE_META[n.node_type].color)}
+                  className={cn("h-3 w-3", meta[n.node_type].color)}
                 />
                 {n.node_key}
               </span>

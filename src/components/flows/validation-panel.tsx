@@ -21,8 +21,10 @@ import { CircleAlert, CircleCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ValidationIssue } from "@/lib/flows/validate";
 import { useFlowEditor } from "./flow-editor-state";
+import { useLocale } from "@/hooks/use-locale";
 
 export function ValidationPanel() {
+  const { t } = useLocale();
   const { issues, requestFlash } = useFlowEditor();
 
   if (issues.length === 0) {
@@ -32,12 +34,22 @@ export function ValidationPanel() {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-emerald-600/50 bg-background p-3 text-sm font-medium text-emerald-300">
         <CircleCheck className="h-4 w-4 shrink-0" />
-        No issues. Ready to activate.
+        {t("flow.validation.noIssues")}
       </div>
     );
   }
   const errors = issues.filter((i) => i.severity === "error");
   const warnings = issues.filter((i) => i.severity === "warning");
+  const errorWord = t(
+    errors.length === 1
+      ? "flow.validation.errorSingular"
+      : "flow.validation.errorPlural",
+  );
+  const warningWord = t(
+    warnings.length === 1
+      ? "flow.validation.warningSingular"
+      : "flow.validation.warningPlural",
+  );
   return (
     <div
       className={cn(
@@ -51,8 +63,8 @@ export function ValidationPanel() {
         ) : (
           <CircleAlert className="h-4 w-4 text-amber-400" />
         )}
-        {errors.length} error{errors.length === 1 ? "" : "s"},{" "}
-        {warnings.length} warning{warnings.length === 1 ? "" : "s"}
+        {errors.length} {errorWord},{" "}
+        {warnings.length} {warningWord}
       </div>
       <div className="flex flex-col gap-1">
         {issues.map((i, ix) => (
@@ -76,6 +88,7 @@ export function IssueLine({
   issue: ValidationIssue;
   onJump?: (key: string) => void;
 }) {
+  const { t } = useLocale();
   const tone =
     issue.severity === "error" ? "text-red-300" : "text-amber-300";
   const iconTone =
@@ -106,7 +119,7 @@ export function IssueLine({
           "flex w-full items-start gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-muted/60",
           tone,
         )}
-        aria-label={`Jump to node ${issue.node_key}`}
+        aria-label={t("flow.validation.jumpAria").replace("{key}", issue.node_key!)}
       >
         {body}
       </button>

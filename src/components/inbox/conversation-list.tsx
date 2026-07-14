@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLocale } from "@/hooks/use-locale";
 
 interface ConversationListProps {
   activeConversationId: string | null;
@@ -38,12 +39,12 @@ const STATUS_COLORS: Record<ConversationStatus, string> = {
 
 type InboxFilter = ConversationStatus | "all" | "unread";
 
-const FILTER_OPTIONS: { label: string; value: InboxFilter }[] = [
-  { label: "All", value: "all" },
-  { label: "Unread", value: "unread" },
-  { label: "Open", value: "open" },
-  { label: "Pending", value: "pending" },
-  { label: "Closed", value: "closed" },
+const FILTER_OPTIONS: { labelKey: string; value: InboxFilter }[] = [
+  { labelKey: "inbox.list.filter.all", value: "all" },
+  { labelKey: "inbox.list.filter.unread", value: "unread" },
+  { labelKey: "inbox.status.open", value: "open" },
+  { labelKey: "inbox.status.pending", value: "pending" },
+  { labelKey: "inbox.status.closed", value: "closed" },
 ];
 
 export function ConversationList({
@@ -53,6 +54,7 @@ export function ConversationList({
   onConversationsLoaded,
   resyncToken = 0,
 }: ConversationListProps) {
+  const { t } = useLocale();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [loading, setLoading] = useState(true);
@@ -160,14 +162,14 @@ export function ConversationList({
           <Input
             value={search}
             onChange={handleSearchChange}
-            placeholder="Search conversations..."
+            placeholder={t("inbox.list.searchPlaceholder")}
             className="border-border bg-muted pl-9 text-sm text-foreground placeholder-muted-foreground focus:border-primary/50"
           />
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex items-center justify-center h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-muted">
-              {activeFilter?.label ?? "All"}
+              {activeFilter ? t(activeFilter.labelKey) : t("inbox.list.filter.all")}
               <ChevronDown className="h-3 w-3" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -185,7 +187,7 @@ export function ConversationList({
                     : "text-popover-foreground"
                 )}
               >
-                {opt.label}
+                {t(opt.labelKey)}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -205,7 +207,7 @@ export function ConversationList({
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-12 text-center">
-            <p className="text-sm text-muted-foreground">No conversations found</p>
+            <p className="text-sm text-muted-foreground">{t("inbox.list.empty")}</p>
           </div>
         ) : (
           <div className="flex flex-col">
@@ -230,13 +232,20 @@ interface ConversationItemProps {
   onSelect: (conversation: Conversation) => void;
 }
 
+const STATUS_LABEL_KEYS: Record<ConversationStatus, string> = {
+  open: "inbox.status.open",
+  pending: "inbox.status.pending",
+  closed: "inbox.status.closed",
+};
+
 function ConversationItem({
   conversation,
   isActive,
   onSelect,
 }: ConversationItemProps) {
+  const { t } = useLocale();
   const contact = conversation.contact;
-  const displayName = contact?.name || contact?.phone || "Unknown";
+  const displayName = contact?.name || contact?.phone || t("inbox.list.unknownContact");
   const initials = displayName.charAt(0).toUpperCase();
 
   const handleClick = useCallback(() => {
@@ -280,7 +289,7 @@ function ConversationItem({
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <p className="truncate text-xs text-muted-foreground">
-            {conversation.last_message_text || "No messages yet"}
+            {conversation.last_message_text || t("inbox.list.noMessagesYet")}
           </p>
           <div className="flex shrink-0 items-center gap-1.5">
             {conversation.unread_count > 0 && (
@@ -293,7 +302,7 @@ function ConversationItem({
                 "h-2 w-2 rounded-full",
                 STATUS_COLORS[conversation.status]
               )}
-              title={conversation.status}
+              title={t(STATUS_LABEL_KEYS[conversation.status])}
             />
           </div>
         </div>

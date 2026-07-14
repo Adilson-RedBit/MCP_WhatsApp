@@ -95,6 +95,39 @@ export function phoneVariants(sanitized: string): string[] {
 }
 
 /**
+ * Normalize a Brazilian phone number to E.164 digits (55 + DDD + number).
+ * Google Places returns national formats like "(19) 3255-1234" — without
+ * the country code Meta would route the send to the wrong destination.
+ *
+ * - "(19) 3255-1234"    → "551932551234"
+ * - "(19) 99876-5432"   → "5519998765432"
+ * - "+55 19 3255-1234"  → "551932551234"
+ * - "0 19 3255-1234"    → "551932551234" (trunk 0 dropped)
+ *
+ * Returns null when the number can't plausibly be a BR phone.
+ */
+export function normalizeBrazilPhone(phone: string): string | null {
+  if (!phone) return null
+  let digits = phone.replace(/\D/g, '')
+  if (!digits) return null
+
+  // Already has country code
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    return digits
+  }
+
+  // Trunk prefix 0 before the DDD (e.g. "01932551234")
+  if (digits.startsWith('0')) digits = digits.slice(1)
+
+  // DDD (2) + landline (8) or mobile (9) digits
+  if (digits.length === 10 || digits.length === 11) {
+    return '55' + digits
+  }
+
+  return null
+}
+
+/**
  * Returns true when the Meta API error indicates the recipient
  * phone number isn't in the allowed list (sandbox restriction).
  * Detected via error code 131030 or the standard error text.

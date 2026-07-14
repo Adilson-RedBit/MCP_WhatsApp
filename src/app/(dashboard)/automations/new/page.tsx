@@ -8,16 +8,19 @@ import {
   type BuilderInitial,
   type BuilderStep,
 } from "@/components/automations/automation-builder"
-import { AUTOMATION_TEMPLATES, type TemplateSlug } from "@/lib/automations/templates"
+import { getAutomationTemplates, type TemplateSlug } from "@/lib/automations/templates"
+import { useLocale } from "@/hooks/use-locale"
 import type { AutomationStepType, AutomationTriggerType } from "@/types"
 
 export default function NewAutomationPage() {
   const params = useSearchParams()
+  const { t: translate } = useLocale()
   const template = params.get("template") as TemplateSlug | null
 
   const initial: BuilderInitial = useMemo(() => {
-    if (template && AUTOMATION_TEMPLATES[template]) {
-      const t = AUTOMATION_TEMPLATES[template]
+    const templates = getAutomationTemplates(translate)
+    if (template && templates[template]) {
+      const t = templates[template]
       const steps = expandFromSeeds(
         t.steps.map((seed, idx) => ({
           index: idx,
@@ -44,7 +47,7 @@ export default function NewAutomationPage() {
       is_active: false,
       steps: [],
     }
-  }, [template])
+  }, [template, translate])
 
   return <AutomationBuilder initial={initial} />
 }

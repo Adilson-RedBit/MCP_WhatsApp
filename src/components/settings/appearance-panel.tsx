@@ -1,8 +1,10 @@
 "use client";
 
-import { Check, Moon, Palette, SunMoon, Sun } from "lucide-react";
+import { Check, Globe, Moon, Palette, SunMoon, Sun } from "lucide-react";
 
 import { useTheme } from "@/hooks/use-theme";
+import { useLocale } from "@/hooks/use-locale";
+import { LOCALE_META, type Locale } from "@/lib/i18n";
 import { MODES, THEMES, type Mode, type ThemeId } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { SettingsPanelHead } from "./settings-panel-head";
@@ -21,28 +23,60 @@ import { SettingsPanelHead } from "./settings-panel-head";
  */
 export function AppearancePanel() {
   const { theme, setTheme, mode, setMode } = useTheme();
+  const { locale, setLocale, t } = useLocale();
   return (
     <section className="max-w-3xl animate-in fade-in-50 duration-200">
       <SettingsPanelHead
-        title="Appearance"
-        description="Set the mode and accent colour used across the app. Saved to this device — try it, it changes live."
+        title={t("appearance.title")}
+        description={t("appearance.description")}
       />
 
+      {/* Idioma */}
       <div className="space-y-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <SunMoon className="size-4 text-muted-foreground" />
-          Mode
+          <Globe className="size-4 text-muted-foreground" />
+          {t("appearance.language")}
         </h3>
 
         <div
           role="radiogroup"
-          aria-label="Color mode"
+          aria-label={t("appearance.language")}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+        >
+          {LOCALE_META.map((l) => (
+            <LocaleCard
+              key={l.id}
+              id={l.id}
+              label={l.label}
+              flag={l.flag}
+              isActive={l.id === locale}
+              activeLabel={t("appearance.active")}
+              onPick={() => setLocale(l.id)}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t("appearance.languageHint")}
+        </p>
+      </div>
+
+      <div className="mt-8 space-y-4">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <SunMoon className="size-4 text-muted-foreground" />
+          {t("appearance.mode")}
+        </h3>
+
+        <div
+          role="radiogroup"
+          aria-label={t("appearance.mode")}
           className="grid max-w-md grid-cols-2 gap-3"
         >
           {MODES.map((m) => (
             <ModeCard
               key={m}
               mode={m}
+              label={t(m === "light" ? "appearance.light" : "appearance.dark")}
+              activeLabel={t("appearance.active")}
               isActive={m === mode}
               onPick={() => setMode(m)}
             />
@@ -53,7 +87,7 @@ export function AppearancePanel() {
       <div className="mt-8 space-y-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <Palette className="size-4 text-muted-foreground" />
-          Accent color
+          {t("appearance.accent")}
         </h3>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -74,12 +108,65 @@ export function AppearancePanel() {
   );
 }
 
+function LocaleCard({
+  id,
+  label,
+  flag,
+  isActive,
+  activeLabel,
+  onPick,
+}: {
+  id: Locale;
+  label: string;
+  flag: string;
+  isActive: boolean;
+  activeLabel: string;
+  onPick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      onClick={onPick}
+      aria-checked={isActive}
+      aria-label={label}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
+        isActive
+          ? "border-primary/60 ring-2 ring-primary/40"
+          : "border-border hover:border-border hover:bg-muted/40",
+      )}
+    >
+      <span
+        aria-hidden
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-lg"
+      >
+        {flag}
+      </span>
+      <span className="flex-1 text-sm font-semibold text-foreground">
+        {label}
+      </span>
+      {isActive && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
+          <Check className="h-3 w-3" />
+          {activeLabel}
+        </span>
+      )}
+      <span className="sr-only">{id}</span>
+    </button>
+  );
+}
+
 function ModeCard({
   mode,
+  label,
+  activeLabel,
   isActive,
   onPick,
 }: {
   mode: Mode;
+  label: string;
+  activeLabel: string;
   isActive: boolean;
   onPick: () => void;
 }) {
@@ -91,7 +178,7 @@ function ModeCard({
       role="radio"
       onClick={onPick}
       aria-checked={isActive}
-      aria-label={`Use ${mode} mode`}
+      aria-label={label}
       className={cn(
         "flex items-center gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
         isActive
@@ -105,13 +192,13 @@ function ModeCard({
       >
         <Icon className="h-4 w-4" />
       </span>
-      <span className="flex-1 text-sm font-semibold capitalize text-foreground">
-        {mode}
+      <span className="flex-1 text-sm font-semibold text-foreground">
+        {label}
       </span>
       {isActive && (
         <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
           <Check className="h-3 w-3" />
-          Active
+          {activeLabel}
         </span>
       )}
     </button>

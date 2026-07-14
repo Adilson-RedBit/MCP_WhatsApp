@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Eye, Loader2 } from 'lucide-react';
+import { useLocale } from '@/hooks/use-locale';
 
 type VariableType = 'static' | 'field' | 'custom_field';
 
@@ -28,13 +29,6 @@ interface Step3Props {
   onNext: () => void;
   onBack: () => void;
 }
-
-const contactFields = [
-  { value: 'name', label: 'Contact Name' },
-  { value: 'phone', label: 'Phone Number' },
-  { value: 'email', label: 'Email Address' },
-  { value: 'company', label: 'Company' },
-];
 
 const SAMPLE_CONTACT: Contact = {
   id: 'sample',
@@ -55,6 +49,15 @@ export function Step3Personalize({
   onNext,
   onBack,
 }: Step3Props) {
+  const { t } = useLocale();
+
+  const contactFields = [
+    { value: 'name', label: t('bc.step3.field.name') },
+    { value: 'phone', label: t('bc.step3.field.phone') },
+    { value: 'email', label: t('bc.step3.field.email') },
+    { value: 'company', label: t('bc.step3.field.company') },
+  ];
+
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [loadingFields, setLoadingFields] = useState(true);
   const [firstContact, setFirstContact] = useState<Contact | null>(null);
@@ -182,22 +185,21 @@ export function Step3Personalize({
 
   const previewLabel = firstContact
     ? firstContact.name || firstContact.phone
-    : 'sample data';
+    : t('bc.step3.sampleDataLabel');
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Personalize Message</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t('bc.step3.title')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Map template variables to contact fields, custom fields, or static
-          values.
+          {t('bc.step3.subtitle')}
         </p>
       </div>
 
       {placeholders.length === 0 ? (
         <div className="rounded-xl border border-border bg-card/50 p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            This template has no variables to personalize.
+            {t('bc.step3.noVariables')}
           </p>
         </div>
       ) : (
@@ -220,7 +222,7 @@ export function Step3Personalize({
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                      Mapping Type
+                      {t('bc.step3.mappingTypeLabel')}
                     </label>
                     <Select
                       value={mapping.type}
@@ -235,10 +237,10 @@ export function Step3Personalize({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="border-border bg-popover">
-                        <SelectItem value="static">Static Value</SelectItem>
-                        <SelectItem value="field">Contact Field</SelectItem>
+                        <SelectItem value="static">{t('bc.step3.mappingType.static')}</SelectItem>
+                        <SelectItem value="field">{t('bc.step3.mappingType.field')}</SelectItem>
                         <SelectItem value="custom_field">
-                          Custom Field
+                          {t('bc.step3.mappingType.customField')}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -246,7 +248,7 @@ export function Step3Personalize({
 
                   <div>
                     <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                      {mapping.type === 'static' ? 'Value' : 'Field'}
+                      {mapping.type === 'static' ? t('bc.step3.valueLabel') : t('bc.step3.fieldLabel')}
                     </label>
                     {mapping.type === 'static' ? (
                       <Input
@@ -254,7 +256,7 @@ export function Step3Personalize({
                         onChange={(e) =>
                           updateVariable(key, { value: e.target.value })
                         }
-                        placeholder="Enter value..."
+                        placeholder={t('bc.step3.enterValuePh')}
                         className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
                       />
                     ) : mapping.type === 'field' ? (
@@ -265,7 +267,7 @@ export function Step3Personalize({
                         }
                       >
                         <SelectTrigger className="w-full border-border bg-muted text-foreground">
-                          <SelectValue placeholder="Select field..." />
+                          <SelectValue placeholder={t('bc.step3.selectFieldPh')} />
                         </SelectTrigger>
                         <SelectContent className="border-border bg-popover">
                           {contactFields.map((field) => (
@@ -286,10 +288,10 @@ export function Step3Personalize({
                           <SelectValue
                             placeholder={
                               loadingFields
-                                ? 'Loading…'
+                                ? t('bc.step3.loadingEllipsis')
                                 : customFields.length === 0
-                                  ? 'No custom fields'
-                                  : 'Select custom field…'
+                                  ? t('bc.step3.noCustomFields')
+                                  : t('bc.step3.selectCustomFieldPh')
                             }
                           />
                         </SelectTrigger>
@@ -315,7 +317,7 @@ export function Step3Personalize({
       <div className="rounded-xl border border-border bg-card/50 p-4">
         <div className="mb-3 flex items-center gap-2">
           <Eye className="h-4 w-4 text-primary" />
-          <p className="text-sm font-medium text-foreground">Live Preview</p>
+          <p className="text-sm font-medium text-foreground">{t('bc.step3.livePreviewTitle')}</p>
           <span className="text-xs text-muted-foreground">({previewLabel})</span>
           {loadingPreview && (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
@@ -332,11 +334,11 @@ export function Step3Personalize({
 
       {unmappedKeys.length > 0 && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-          Map every placeholder before continuing — still missing{' '}
+          {t('bc.step3.unmappedWarningPrefix')}{' '}
           <span className="font-mono font-semibold">
             {unmappedKeys.join(', ')}
           </span>
-          . Otherwise those placeholders will ship to Meta as empty strings.
+          {t('bc.step3.unmappedWarningSuffix')}
         </div>
       )}
 
@@ -347,14 +349,14 @@ export function Step3Personalize({
           className="border-border text-muted-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('bc.common.back')}
         </Button>
         <Button
           onClick={onNext}
           disabled={unmappedKeys.length > 0}
           className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
-          Next
+          {t('bc.common.next')}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

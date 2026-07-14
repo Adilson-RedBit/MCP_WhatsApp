@@ -53,6 +53,7 @@ import type {
 } from "@/types"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/hooks/use-locale"
 
 // ------------------------------------------------------------
 // Types (builder-local — mirror the flattened rows we POST)
@@ -87,18 +88,22 @@ interface StepMeta {
   border: string
 }
 
-const STEP_META: Record<AutomationStepType, StepMeta> = {
-  send_message: { label: "Send Message", icon: MessageSquare, border: "border-l-primary" },
-  send_template: { label: "Send Template", icon: FileText, border: "border-l-primary" },
-  add_tag: { label: "Add Tag", icon: Tag, border: "border-l-primary" },
-  remove_tag: { label: "Remove Tag", icon: TagIcon, border: "border-l-primary" },
-  assign_conversation: { label: "Assign Conversation", icon: UserCheck, border: "border-l-primary" },
-  update_contact_field: { label: "Update Contact Field", icon: PencilLine, border: "border-l-primary" },
-  create_deal: { label: "Create Deal", icon: Briefcase, border: "border-l-primary" },
-  wait: { label: "Wait", icon: Hourglass, border: "border-l-border" },
-  condition: { label: "Condition (If/Else)", icon: GitBranch, border: "border-l-amber-500" },
-  send_webhook: { label: "Send Webhook", icon: Webhook, border: "border-l-primary" },
-  close_conversation: { label: "Close Conversation", icon: CircleSlash, border: "border-l-primary" },
+/** Step labels depend on the active locale, so this builds the metadata
+ *  table on demand from `t` instead of living as a module-level constant. */
+function getStepMeta(t: (key: string) => string): Record<AutomationStepType, StepMeta> {
+  return {
+    send_message: { label: t("auto.builder.step.sendMessage"), icon: MessageSquare, border: "border-l-primary" },
+    send_template: { label: t("auto.builder.step.sendTemplate"), icon: FileText, border: "border-l-primary" },
+    add_tag: { label: t("auto.builder.step.addTag"), icon: Tag, border: "border-l-primary" },
+    remove_tag: { label: t("auto.builder.step.removeTag"), icon: TagIcon, border: "border-l-primary" },
+    assign_conversation: { label: t("auto.builder.step.assignConversation"), icon: UserCheck, border: "border-l-primary" },
+    update_contact_field: { label: t("auto.builder.step.updateContactField"), icon: PencilLine, border: "border-l-primary" },
+    create_deal: { label: t("auto.builder.step.createDeal"), icon: Briefcase, border: "border-l-primary" },
+    wait: { label: t("auto.builder.step.wait"), icon: Hourglass, border: "border-l-border" },
+    condition: { label: t("auto.builder.step.condition"), icon: GitBranch, border: "border-l-amber-500" },
+    send_webhook: { label: t("auto.builder.step.sendWebhook"), icon: Webhook, border: "border-l-primary" },
+    close_conversation: { label: t("auto.builder.step.closeConversation"), icon: CircleSlash, border: "border-l-primary" },
+  }
 }
 
 const ADDABLE_STEPS: AutomationStepType[] = [
@@ -115,19 +120,50 @@ const ADDABLE_STEPS: AutomationStepType[] = [
   "close_conversation",
 ]
 
-const TRIGGER_OPTIONS: { value: AutomationTriggerType; label: string; hint: string }[] = [
-  { value: "new_message_received", label: "New Message Received", hint: "Any incoming message" },
-  {
-    value: "first_inbound_message",
-    label: "First Message from Contact",
-    hint: "First time this contact ever messages you (works for manually-added contacts too)",
-  },
-  { value: "keyword_match", label: "Keyword Match", hint: "Message contains specific keyword(s)" },
-  { value: "new_contact_created", label: "New Contact Created", hint: "When a contact is auto-created from an incoming message" },
-  { value: "conversation_assigned", label: "Conversation Assigned", hint: "When assigned to an agent" },
-  { value: "tag_added", label: "Tag Added", hint: "When a tag is added to a contact" },
-  { value: "time_based", label: "Time-Based", hint: "On a recurring schedule" },
-]
+/** Trigger picker labels/hints depend on the active locale, so this builds
+ *  the options list on demand from `t` instead of living as a module-level
+ *  constant. */
+function getTriggerOptions(
+  t: (key: string) => string,
+): { value: AutomationTriggerType; label: string; hint: string }[] {
+  return [
+    {
+      value: "new_message_received",
+      label: t("auto.builder.trigger.newMessage.label"),
+      hint: t("auto.builder.trigger.newMessage.hint"),
+    },
+    {
+      value: "first_inbound_message",
+      label: t("auto.builder.trigger.firstMessage.label"),
+      hint: t("auto.builder.trigger.firstMessage.hint"),
+    },
+    {
+      value: "keyword_match",
+      label: t("auto.builder.trigger.keywordMatch.label"),
+      hint: t("auto.builder.trigger.keywordMatch.hint"),
+    },
+    {
+      value: "new_contact_created",
+      label: t("auto.builder.trigger.newContact.label"),
+      hint: t("auto.builder.trigger.newContact.hint"),
+    },
+    {
+      value: "conversation_assigned",
+      label: t("auto.builder.trigger.convAssigned.label"),
+      hint: t("auto.builder.trigger.convAssigned.hint"),
+    },
+    {
+      value: "tag_added",
+      label: t("auto.builder.trigger.tagAdded.label"),
+      hint: t("auto.builder.trigger.tagAdded.hint"),
+    },
+    {
+      value: "time_based",
+      label: t("auto.builder.trigger.timeBased.label"),
+      hint: t("auto.builder.trigger.timeBased.hint"),
+    },
+  ]
+}
 
 function cid(): string {
   return (
@@ -262,18 +298,19 @@ function TagSelect({
   value: string
   onChange: (v: string) => void
 }) {
+  const { t } = useLocale()
   const { tags } = useResources()
   if (tags.length === 0) {
     return (
       <Input
-        placeholder="Tag id"
+        placeholder={t("auto.builder.placeholder.tagId")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="bg-muted text-foreground"
       />
     )
   }
-  const selected = tags.find((t) => t.id === value)
+  const selected = tags.find((tag) => tag.id === value)
   return (
     <div className="flex items-center gap-2">
       <span
@@ -286,16 +323,16 @@ function TagSelect({
         onChange={(e) => onChange(e.target.value)}
         className={SELECT_CLASS}
       >
-        <option value="">Select a tag…</option>
-        {tags.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
+        <option value="">{t("auto.builder.select.tag")}</option>
+        {tags.map((tag) => (
+          <option key={tag.id} value={tag.id}>
+            {tag.name}
           </option>
         ))}
         {/* Preserve a saved tag that's since been deleted so editing an
             existing automation doesn't silently drop it. */}
         {value && !selected && (
-          <option value={value}>{value} (unknown tag)</option>
+          <option value={value}>{t("auto.builder.unknown.tag").replace("{value}", value)}</option>
         )}
       </select>
     </div>
@@ -313,6 +350,7 @@ function ContactFieldSelect({
   value: string
   onChange: (v: string) => void
 }) {
+  const { t } = useLocale()
   const { customFields } = useResources()
   const customValue = value.startsWith("custom:") ? value : ""
   const knownCustom =
@@ -323,11 +361,11 @@ function ContactFieldSelect({
       onChange={(e) => onChange(e.target.value)}
       className={SELECT_CLASS}
     >
-      <option value="name">Name</option>
-      <option value="email">Email</option>
-      <option value="company">Company</option>
+      <option value="name">{t("auto.builder.option.fieldName")}</option>
+      <option value="email">{t("auto.builder.option.fieldEmail")}</option>
+      <option value="company">{t("auto.builder.option.fieldCompany")}</option>
       {customFields.length > 0 && (
-        <optgroup label="Custom fields">
+        <optgroup label={t("auto.builder.option.customFieldsGroup")}>
           {customFields.map((f) => (
             <option key={f.id} value={`custom:${f.id}`}>
               {f.field_name}
@@ -336,7 +374,7 @@ function ContactFieldSelect({
         </optgroup>
       )}
       {customValue && !knownCustom && (
-        <option value={customValue}>{customValue} (unknown field)</option>
+        <option value={customValue}>{t("auto.builder.unknown.field").replace("{value}", customValue)}</option>
       )}
     </select>
   )
@@ -351,11 +389,12 @@ function AgentSelect({
   value: string
   onChange: (v: string) => void
 }) {
+  const { t } = useLocale()
   const { members } = useResources()
   if (members.length === 0) {
     return (
       <Input
-        placeholder="Agent id"
+        placeholder={t("auto.builder.placeholder.agentId")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="bg-muted text-foreground"
@@ -369,14 +408,14 @@ function AgentSelect({
       onChange={(e) => onChange(e.target.value)}
       className={SELECT_CLASS}
     >
-      <option value="">Select an agent…</option>
+      <option value="">{t("auto.builder.select.agent")}</option>
       {members.map((m) => (
         <option key={m.user_id} value={m.user_id}>
           {m.full_name || m.email || m.user_id}
         </option>
       ))}
       {value && !selected && (
-        <option value={value}>{value} (unknown agent)</option>
+        <option value={value}>{t("auto.builder.unknown.agent").replace("{value}", value)}</option>
       )}
     </select>
   )
@@ -394,12 +433,13 @@ function SendTemplateFields({
   language: string
   onChange: (patch: { template_name: string; language: string }) => void
 }) {
+  const { t } = useLocale()
   const { templates } = useResources()
 
   if (templates.length === 0) {
     return (
       <>
-        <FieldBlock label="Template name">
+        <FieldBlock label={t("auto.builder.field.templateName")}>
           <Input
             value={templateName}
             onChange={(e) =>
@@ -408,7 +448,7 @@ function SendTemplateFields({
             className="bg-muted text-foreground"
           />
         </FieldBlock>
-        <FieldBlock label="Language">
+        <FieldBlock label={t("auto.builder.field.language")}>
           <Input
             value={language}
             onChange={(e) =>
@@ -426,11 +466,11 @@ function SendTemplateFields({
   const toValue = (name: string, lang: string) => `${name}::${lang}`
   const current = templateName ? toValue(templateName, language) : ""
   const hasMatch = templates.some(
-    (t) => toValue(t.name, t.language ?? "en_US") === current,
+    (tpl) => toValue(tpl.name, tpl.language ?? "en_US") === current,
   )
 
   return (
-    <FieldBlock label="Template">
+    <FieldBlock label={t("auto.builder.field.template")}>
       <select
         value={current}
         onChange={(e) => {
@@ -439,18 +479,20 @@ function SendTemplateFields({
         }}
         className={SELECT_CLASS}
       >
-        <option value="">Select a template…</option>
-        {templates.map((t) => {
-          const lang = t.language ?? "en_US"
+        <option value="">{t("auto.builder.select.template")}</option>
+        {templates.map((tpl) => {
+          const lang = tpl.language ?? "en_US"
           return (
-            <option key={t.id} value={toValue(t.name, lang)}>
-              {t.name} ({lang})
+            <option key={tpl.id} value={toValue(tpl.name, lang)}>
+              {tpl.name} ({lang})
             </option>
           )
         })}
         {current && !hasMatch && (
           <option value={current}>
-            {templateName} ({language || "unknown"}) — not in approved list
+            {t("auto.builder.unknown.templateNotApproved")
+              .replace("{name}", templateName)
+              .replace("{lang}", language || t("auto.builder.unknown.language"))}
           </option>
         )}
       </select>
@@ -464,6 +506,7 @@ function SendTemplateFields({
 
 export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   const router = useRouter()
+  const { t } = useLocale()
   const isEditing = !!initial.id
   const [state, setState] = useState<BuilderInitial>(initial)
   const [saving, setSaving] = useState(false)
@@ -502,7 +545,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
     setSaving(true)
     try {
       const payload = {
-        name: state.name || "Untitled automation",
+        name: state.name || t("auto.builder.untitled"),
         description: state.description || null,
         trigger_type: state.trigger_type,
         trigger_config: state.trigger_config,
@@ -531,14 +574,16 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
           body?.issues?.[0]
         if (firstIssue?.message) {
           toast.error(firstIssue.message, {
-            description: firstIssue.path ? `at ${firstIssue.path}` : undefined,
+            description: firstIssue.path
+              ? t("auto.builder.issueAt").replace("{path}", firstIssue.path)
+              : undefined,
           })
         } else {
-          toast.error(body?.error ?? "Save failed")
+          toast.error(body?.error ?? t("auto.builder.saveFailed"))
         }
         return
       }
-      toast.success(isEditing ? "Automation saved" : "Automation created")
+      toast.success(isEditing ? t("auto.builder.saved") : t("auto.builder.createdToast"))
       if (!isEditing && body?.automation?.id) {
         router.replace(`/automations/${body.automation.id}/edit`)
       }
@@ -557,22 +602,22 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
           type="button"
           onClick={() => router.push("/automations")}
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label="Back to automations"
+          aria-label={t("auto.builder.backAria")}
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <input
           value={state.name}
           onChange={(e) => patchTop("name", e.target.value)}
-          placeholder="Untitled automation"
+          placeholder={t("auto.builder.untitled")}
           className="min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:bg-muted focus:outline-none sm:text-base"
         />
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">Active</span>
+          <span className="hidden sm:inline">{t("auto.builder.active")}</span>
           <Switch
             checked={state.is_active}
             onCheckedChange={(v) => patchTop("is_active", !!v)}
-            aria-label="Active"
+            aria-label={t("auto.builder.active")}
           />
         </div>
         <Button
@@ -581,7 +626,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
           className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {isEditing ? "Save" : "Save Draft"}
+          {isEditing ? t("common.save") : t("auto.builder.saveDraft")}
         </Button>
       </header>
 
@@ -628,6 +673,8 @@ function TriggerCard({
   onTypeChange: (t: AutomationTriggerType) => void
   onConfigChange: (c: Record<string, unknown>) => void
 }) {
+  const { t } = useLocale()
+  const triggerOptions = getTriggerOptions(t)
   const [open, setOpen] = useState(false)
   return (
     // Card width: full on mobile, fixed 320px on sm+. The canvas wrapper
@@ -643,9 +690,9 @@ function TriggerCard({
             <Zap className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wide text-blue-300">Trigger</div>
+            <div className="text-[11px] uppercase tracking-wide text-blue-300">{t("auto.builder.trigger.badge")}</div>
             <div className="truncate text-sm font-medium text-foreground">
-              {TRIGGER_OPTIONS.find((o) => o.value === type)?.label ?? type}
+              {triggerOptions.find((o) => o.value === type)?.label ?? type}
             </div>
           </div>
           <ChevronDown
@@ -656,21 +703,21 @@ function TriggerCard({
           <div className="space-y-3 border-t border-border px-4 py-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Trigger type
+                {t("auto.builder.trigger.typeLabel")}
               </label>
               <select
                 value={type}
                 onChange={(e) => onTypeChange(e.target.value as AutomationTriggerType)}
                 className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
               >
-                {TRIGGER_OPTIONS.map((o) => (
+                {triggerOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {TRIGGER_OPTIONS.find((o) => o.value === type)?.hint}
+                {triggerOptions.find((o) => o.value === type)?.hint}
               </p>
             </div>
             {type === "keyword_match" && (
@@ -682,7 +729,7 @@ function TriggerCard({
             {type === "tag_added" && (
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Tag
+                  {t("auto.builder.field.tag")}
                 </label>
                 <TagSelect
                   value={(config.tag_id as string) ?? ""}
@@ -692,7 +739,7 @@ function TriggerCard({
             )}
             {type === "time_based" && (
               <Input
-                placeholder="Cron expression or HH:mm"
+                placeholder={t("auto.builder.trigger.cronPlaceholder")}
                 value={(config.schedule as string) ?? ""}
                 onChange={(e) =>
                   onConfigChange({ ...config, schedule: e.target.value })
@@ -714,6 +761,7 @@ function KeywordMatchConfig({
   config: KeywordMatchTriggerConfig
   onChange: (c: Record<string, unknown>) => void
 }) {
+  const { t } = useLocale()
   const keywords = config?.keywords ?? []
   // Keep a local draft string so the comma and trailing space aren't
   // stripped on every keystroke (which made multi-word, comma-separated
@@ -748,7 +796,7 @@ function KeywordMatchConfig({
     <div className="space-y-2">
       <div>
         <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Keywords (comma-separated)
+          {t("auto.builder.trigger.keywordsLabel")}
         </label>
         <Input
           value={draft}
@@ -760,21 +808,21 @@ function KeywordMatchConfig({
               commit()
             }
           }}
-          placeholder="e.g. pricing, demo request, talk to sales"
+          placeholder={t("auto.builder.trigger.keywordsPlaceholder")}
           className="bg-muted text-foreground"
         />
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          Match type
+          {t("auto.builder.trigger.matchTypeLabel")}
         </label>
         <select
           value={config?.match_type ?? "contains"}
           onChange={(e) => onChange({ ...config, match_type: e.target.value as "exact" | "contains" })}
           className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground focus:outline-none"
         >
-          <option value="contains">Contains</option>
-          <option value="exact">Exact</option>
+          <option value="contains">{t("auto.builder.trigger.matchContains")}</option>
+          <option value="exact">{t("auto.builder.trigger.matchExact")}</option>
         </select>
       </div>
     </div>
@@ -848,13 +896,14 @@ function StepRenderer({
   parentScope: ParentScope
   parentPath: StepPath
 } & Omit<StepListProps, "steps" | "parentPath">) {
+  const { t } = useLocale()
   const path: StepPath = [
     ...parentPath,
     parentScope.kind === "root"
       ? { kind: "root", index }
       : { kind: "branch", parentCid: parentScope.parentCid, branch: parentScope.branch, index },
   ]
-  const meta = STEP_META[step.step_type]
+  const meta = getStepMeta(t)[step.step_type]
   const Icon = meta.icon
   const expanded = props.expandedId === step.cid
   const isCondition = step.step_type === "condition"
@@ -885,10 +934,14 @@ function StepRenderer({
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                {isCondition ? "Condition" : step.step_type === "wait" ? "Wait" : "Action"}
+                {isCondition
+                  ? t("auto.builder.badge.condition")
+                  : step.step_type === "wait"
+                  ? t("auto.builder.badge.wait")
+                  : t("auto.builder.badge.action")}
               </div>
               <div className="truncate text-sm font-medium text-foreground">{meta.label}</div>
-              <div className="truncate text-[11px] text-muted-foreground">{previewFor(step)}</div>
+              <div className="truncate text-[11px] text-muted-foreground">{previewFor(step, t)}</div>
             </div>
             <ChevronDown
               className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")}
@@ -906,7 +959,7 @@ function StepRenderer({
                     variant="ghost"
                     size="icon"
                     disabled={index === 0}
-                    aria-label="Move up"
+                    aria-label={t("auto.builder.moveUpAria")}
                     onClick={() => props.moveStepAt(path, -1)}
                   >
                     <ArrowUp className="h-4 w-4" />
@@ -915,7 +968,7 @@ function StepRenderer({
                     variant="ghost"
                     size="icon"
                     disabled={index === total - 1}
-                    aria-label="Move down"
+                    aria-label={t("auto.builder.moveDownAria")}
                     onClick={() => props.moveStepAt(path, 1)}
                   >
                     <ArrowDown className="h-4 w-4" />
@@ -927,7 +980,7 @@ function StepRenderer({
                   onClick={() => props.deleteStepAt(path)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  {t("common.delete")}
                 </Button>
               </div>
             </div>
@@ -959,6 +1012,7 @@ function ConditionBranches({
   step: BuilderStep
   parentPath: StepPath
 } & Omit<StepListProps, "steps" | "parentPath">) {
+  const { t } = useLocale()
   const yes = step.branches?.yes ?? []
   const no = step.branches?.no ?? []
   // Build the child scope by appending a branch marker. The scope the
@@ -977,10 +1031,10 @@ function ConditionBranches({
     // cram each branch to ~170px which is too narrow for the nested
     // cards. Two-column grid returns on sm+.
     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <BranchColumn label="Yes" color="text-primary">
+      <BranchColumn label={t("auto.builder.branch.yes")} color="text-primary">
         <StepList {...props} steps={yes} parentPath={yesPath} />
       </BranchColumn>
-      <BranchColumn label="No" color="text-rose-400">
+      <BranchColumn label={t("auto.builder.branch.no")} color="text-rose-400">
         <StepList {...props} steps={no} parentPath={noPath} />
       </BranchColumn>
     </div>
@@ -1005,13 +1059,15 @@ function BranchColumn({
 }
 
 function AddButton({ onPick }: { onPick: (t: AutomationStepType) => void }) {
+  const { t } = useLocale()
+  const stepMeta = getStepMeta(t)
   return (
     <div className="relative flex flex-col items-center">
       <div className="h-4 w-[2px] bg-border" aria-hidden />
       <DropdownMenu>
         <DropdownMenuTrigger
           className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary data-[popup-open]:border-primary data-[popup-open]:bg-primary/20 data-[popup-open]:text-primary"
-          aria-label="Add step"
+          aria-label={t("auto.builder.addStepAria")}
         >
           <Plus className="h-4 w-4" />
         </DropdownMenuTrigger>
@@ -1019,12 +1075,12 @@ function AddButton({ onPick }: { onPick: (t: AutomationStepType) => void }) {
           align="start"
           className="max-h-80 min-w-56 overflow-y-auto border-border bg-popover"
         >
-          {ADDABLE_STEPS.map((t) => {
-            const Icon = STEP_META[t].icon
+          {ADDABLE_STEPS.map((stepType) => {
+            const Icon = stepMeta[stepType].icon
             return (
-              <DropdownMenuItem key={t} onClick={() => onPick(t)}>
+              <DropdownMenuItem key={stepType} onClick={() => onPick(stepType)}>
                 <Icon className="h-4 w-4" />
-                {STEP_META[t].label}
+                {stepMeta[stepType].label}
               </DropdownMenuItem>
             )
           })}
@@ -1046,6 +1102,7 @@ function StepEditor({
   step: BuilderStep
   onChange: (s: BuilderStep) => void
 }) {
+  const { t } = useLocale()
   const cfg = step.step_config
   const set = (patch: Record<string, unknown>) =>
     onChange({ ...step, step_config: { ...cfg, ...patch } })
@@ -1053,11 +1110,11 @@ function StepEditor({
   switch (step.step_type) {
     case "send_message":
       return (
-        <FieldBlock label="Message text">
+        <FieldBlock label={t("auto.builder.field.messageText")}>
           <Textarea
             value={(cfg.text as string) ?? ""}
             onChange={(e) => set({ text: e.target.value })}
-            placeholder="Hi! Thanks for reaching out…"
+            placeholder={t("auto.builder.placeholder.messageText")}
             className="min-h-24 bg-muted text-foreground"
           />
         </FieldBlock>
@@ -1073,7 +1130,7 @@ function StepEditor({
     case "add_tag":
     case "remove_tag":
       return (
-        <FieldBlock label="Tag">
+        <FieldBlock label={t("auto.builder.field.tag")}>
           <TagSelect
             value={(cfg.tag_id as string) ?? ""}
             onChange={(v) => set({ tag_id: v })}
@@ -1083,18 +1140,18 @@ function StepEditor({
     case "assign_conversation":
       return (
         <>
-          <FieldBlock label="Mode">
+          <FieldBlock label={t("auto.builder.field.mode")}>
             <select
               value={(cfg.mode as string) ?? "round_robin"}
               onChange={(e) => set({ mode: e.target.value })}
               className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
             >
-              <option value="round_robin">Round-robin</option>
-              <option value="specific">Specific agent</option>
+              <option value="round_robin">{t("auto.builder.option.roundRobin")}</option>
+              <option value="specific">{t("auto.builder.option.specificAgent")}</option>
             </select>
           </FieldBlock>
           {cfg.mode === "specific" && (
-            <FieldBlock label="Agent">
+            <FieldBlock label={t("auto.builder.field.agent")}>
               <AgentSelect
                 value={(cfg.agent_id as string) ?? ""}
                 onChange={(v) => set({ agent_id: v })}
@@ -1106,17 +1163,17 @@ function StepEditor({
     case "update_contact_field":
       return (
         <>
-          <FieldBlock label="Field">
+          <FieldBlock label={t("auto.builder.field.field")}>
             <ContactFieldSelect
               value={(cfg.field as string) ?? "name"}
               onChange={(v) => set({ field: v })}
             />
           </FieldBlock>
-          <FieldBlock label="Value">
+          <FieldBlock label={t("auto.builder.field.value")}>
             <Input
               value={(cfg.value as string) ?? ""}
               onChange={(e) => set({ value: e.target.value })}
-              placeholder="Text or {{ vars.x }} / {{ message.text }}"
+              placeholder={t("auto.builder.placeholder.contactFieldValue")}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
@@ -1125,28 +1182,28 @@ function StepEditor({
     case "create_deal":
       return (
         <>
-          <FieldBlock label="Pipeline id">
+          <FieldBlock label={t("auto.builder.field.pipelineId")}>
             <Input
               value={(cfg.pipeline_id as string) ?? ""}
               onChange={(e) => set({ pipeline_id: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Stage id">
+          <FieldBlock label={t("auto.builder.field.stageId")}>
             <Input
               value={(cfg.stage_id as string) ?? ""}
               onChange={(e) => set({ stage_id: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Title">
+          <FieldBlock label={t("auto.builder.field.title")}>
             <Input
               value={(cfg.title as string) ?? ""}
               onChange={(e) => set({ title: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Value">
+          <FieldBlock label={t("auto.builder.field.value")}>
             <Input
               type="number"
               value={(cfg.value as number) ?? 0}
@@ -1159,7 +1216,7 @@ function StepEditor({
     case "wait":
       return (
         <div className="grid grid-cols-2 gap-2">
-          <FieldBlock label="Amount">
+          <FieldBlock label={t("auto.builder.field.amount")}>
             <Input
               type="number"
               min={1}
@@ -1168,15 +1225,15 @@ function StepEditor({
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Unit">
+          <FieldBlock label={t("auto.builder.field.unit")}>
             <select
               value={(cfg.unit as string) ?? "hours"}
               onChange={(e) => set({ unit: e.target.value })}
               className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
             >
-              <option value="minutes">Minutes</option>
-              <option value="hours">Hours</option>
-              <option value="days">Days</option>
+              <option value="minutes">{t("auto.builder.wait.unitMinutes")}</option>
+              <option value="hours">{t("auto.builder.wait.unitHours")}</option>
+              <option value="days">{t("auto.builder.wait.unitDays")}</option>
             </select>
           </FieldBlock>
         </div>
@@ -1184,27 +1241,27 @@ function StepEditor({
     case "condition":
       return (
         <>
-          <FieldBlock label="Subject">
+          <FieldBlock label={t("auto.builder.field.subject")}>
             <select
               value={(cfg.subject as string) ?? "tag_presence"}
               onChange={(e) => set({ subject: e.target.value })}
               className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
             >
-              <option value="tag_presence">Tag presence</option>
-              <option value="contact_field">Contact field</option>
-              <option value="message_content">Message content</option>
-              <option value="time_of_day">Time of day</option>
+              <option value="tag_presence">{t("auto.builder.option.tagPresence")}</option>
+              <option value="contact_field">{t("auto.builder.option.contactField")}</option>
+              <option value="message_content">{t("auto.builder.option.messageContent")}</option>
+              <option value="time_of_day">{t("auto.builder.option.timeOfDay")}</option>
             </select>
           </FieldBlock>
-          <FieldBlock label="Operand">
+          <FieldBlock label={t("auto.builder.field.operand")}>
             <Input
               placeholder={
                 cfg.subject === "time_of_day"
-                  ? "HH:mm-HH:mm"
+                  ? t("auto.builder.placeholder.timeRange")
                   : cfg.subject === "contact_field"
-                  ? "name / email / company"
+                  ? t("auto.builder.placeholder.contactFieldOperand")
                   : cfg.subject === "tag_presence"
-                  ? "tag id"
+                  ? t("auto.builder.placeholder.tagIdLower")
                   : ""
               }
               value={(cfg.operand as string) ?? ""}
@@ -1213,7 +1270,7 @@ function StepEditor({
             />
           </FieldBlock>
           {(cfg.subject === "contact_field" || cfg.subject === "message_content") && (
-            <FieldBlock label="Value">
+            <FieldBlock label={t("auto.builder.field.value")}>
               <Input
                 value={(cfg.value as string) ?? ""}
                 onChange={(e) => set({ value: e.target.value })}
@@ -1226,14 +1283,14 @@ function StepEditor({
     case "send_webhook":
       return (
         <>
-          <FieldBlock label="URL">
+          <FieldBlock label={t("auto.builder.field.url")}>
             <Input
               value={(cfg.url as string) ?? ""}
               onChange={(e) => set({ url: e.target.value })}
               className="bg-muted text-foreground"
             />
           </FieldBlock>
-          <FieldBlock label="Body template (JSON)">
+          <FieldBlock label={t("auto.builder.field.bodyTemplate")}>
             <Textarea
               value={(cfg.body_template as string) ?? ""}
               onChange={(e) => set({ body_template: e.target.value })}
@@ -1245,7 +1302,7 @@ function StepEditor({
     case "close_conversation":
       return (
         <p className="text-xs text-muted-foreground">
-          Sets the conversation status to &quot;closed&quot;. No configuration needed.
+          {t("auto.builder.closeConversation.desc")}
         </p>
       )
     default:
@@ -1268,18 +1325,28 @@ function FieldBlock({
   )
 }
 
-function previewFor(step: BuilderStep): string {
+function previewFor(step: BuilderStep, t: (key: string) => string): string {
   switch (step.step_type) {
     case "send_message":
-      return (step.step_config.text as string) || "no text yet"
+      return (step.step_config.text as string) || t("auto.builder.preview.noText")
     case "send_template":
-      return (step.step_config.template_name as string) || "pick a template"
-    case "wait":
-      return `${step.step_config.amount ?? "?"} ${step.step_config.unit ?? ""}`
+      return (step.step_config.template_name as string) || t("auto.builder.preview.pickTemplate")
+    case "wait": {
+      const unit = step.step_config.unit as string | undefined
+      const unitLabel =
+        unit === "minutes"
+          ? t("auto.builder.wait.unitMinutes")
+          : unit === "days"
+          ? t("auto.builder.wait.unitDays")
+          : unit === "hours"
+          ? t("auto.builder.wait.unitHours")
+          : (unit ?? "")
+      return `${step.step_config.amount ?? "?"} ${unitLabel}`
+    }
     case "condition":
-      return `when ${step.step_config.subject ?? "?"}`
+      return t("auto.builder.preview.when").replace("{subject}", String(step.step_config.subject ?? "?"))
     case "send_webhook":
-      return (step.step_config.url as string) || "no url"
+      return (step.step_config.url as string) || t("auto.builder.preview.noUrl")
     default:
       return ""
   }

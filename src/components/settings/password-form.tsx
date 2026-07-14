@@ -6,6 +6,7 @@ import { Loader2, KeyRound } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { useLocale } from '@/hooks/use-locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,7 @@ const MIN_PASSWORD = 8;
 
 export function PasswordForm() {
   const { profile } = useAuth();
+  const { t } = useLocale();
   const supabase = createClient();
 
   const [current, setCurrent] = useState('');
@@ -32,15 +34,17 @@ export function PasswordForm() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.email) {
-      toast.error('Cannot change password without a current email');
+      toast.error(t('pwd.toast.noEmail'));
       return;
     }
     if (next.length < MIN_PASSWORD) {
-      setConfirmError(`Password must be at least ${MIN_PASSWORD} characters`);
+      setConfirmError(
+        t('pwd.error.tooShort').replace('{min}', String(MIN_PASSWORD)),
+      );
       return;
     }
     if (next !== confirm) {
-      setConfirmError('New password and confirmation do not match');
+      setConfirmError(t('pwd.error.mismatch'));
       return;
     }
     setConfirmError(null);
@@ -56,7 +60,7 @@ export function PasswordForm() {
         password: current,
       });
       if (signInError) {
-        toast.error('Current password is incorrect');
+        toast.error(t('pwd.toast.wrongCurrent'));
         return;
       }
 
@@ -64,16 +68,18 @@ export function PasswordForm() {
         password: next,
       });
       if (updateError) {
-        toast.error(`Password update failed: ${updateError.message}`);
+        toast.error(
+          t('pwd.toast.updateFailed').replace('{error}', updateError.message),
+        );
         return;
       }
 
       setCurrent('');
       setNext('');
       setConfirm('');
-      toast.success('Password updated');
+      toast.success(t('pwd.toast.updated'));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
+      const msg = err instanceof Error ? err.message : t('pwd.toast.unknownError');
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -85,11 +91,10 @@ export function PasswordForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-foreground">
           <KeyRound className="size-4 text-primary" />
-          Password
+          {t('pwd.title')}
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          Use at least {MIN_PASSWORD} characters. You will stay signed in on
-          this device after changing it.
+          {t('pwd.desc').replace('{min}', String(MIN_PASSWORD))}
         </CardDescription>
       </CardHeader>
 
@@ -97,7 +102,7 @@ export function PasswordForm() {
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current-password" className="text-foreground">
-              Current password
+              {t('pwd.current')}
             </Label>
             <Input
               id="current-password"
@@ -113,7 +118,7 @@ export function PasswordForm() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="new-password" className="text-foreground">
-                New password
+                {t('pwd.new')}
               </Label>
               <Input
                 id="new-password"
@@ -128,7 +133,7 @@ export function PasswordForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password" className="text-foreground">
-                Confirm new password
+                {t('pwd.confirm')}
               </Label>
               <Input
                 id="confirm-password"
@@ -157,10 +162,10 @@ export function PasswordForm() {
               {saving ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Updating…
+                  {t('pwd.updating')}
                 </>
               ) : (
-                'Update password'
+                t('pwd.update')
               )}
             </Button>
           </div>

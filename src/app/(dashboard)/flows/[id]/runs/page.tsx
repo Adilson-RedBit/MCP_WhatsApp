@@ -19,6 +19,7 @@ import { format, formatDistanceToNow } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 /**
  * Run history viewer.
@@ -57,43 +58,48 @@ interface EventRow {
   created_at: string;
 }
 
-const STATUS_META: Record<
-  RunRow["status"],
-  { label: string; classes: string; icon: typeof Clock }
-> = {
-  active: {
-    label: "Active",
-    classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
-    icon: PlayCircle,
-  },
-  completed: {
-    label: "Completed",
-    classes: "border-border bg-muted text-muted-foreground",
-    icon: CircleCheck,
-  },
-  handed_off: {
-    label: "Handed off",
-    classes: "border-amber-600/40 bg-amber-500/10 text-amber-300",
-    icon: UserPlus,
-  },
-  timed_out: {
-    label: "Timed out",
-    classes: "border-border bg-muted/60 text-muted-foreground",
-    icon: Clock,
-  },
-  paused_by_agent: {
-    label: "Paused by agent",
-    classes: "border-border bg-muted text-muted-foreground",
-    icon: PauseCircle,
-  },
-  failed: {
-    label: "Failed",
-    classes: "border-red-600/40 bg-red-500/10 text-red-300",
-    icon: CircleAlert,
-  },
-};
+/** Run-status labels depend on the active locale, so this builds the
+ *  metadata table on demand from `t` instead of living as a
+ *  module-level constant. */
+function getStatusMeta(
+  t: (key: string) => string,
+): Record<RunRow["status"], { label: string; classes: string; icon: typeof Clock }> {
+  return {
+    active: {
+      label: t("flow.runs.status.active"),
+      classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
+      icon: PlayCircle,
+    },
+    completed: {
+      label: t("flow.runs.status.completed"),
+      classes: "border-border bg-muted text-muted-foreground",
+      icon: CircleCheck,
+    },
+    handed_off: {
+      label: t("flow.runs.status.handedOff"),
+      classes: "border-amber-600/40 bg-amber-500/10 text-amber-300",
+      icon: UserPlus,
+    },
+    timed_out: {
+      label: t("flow.runs.status.timedOut"),
+      classes: "border-border bg-muted/60 text-muted-foreground",
+      icon: Clock,
+    },
+    paused_by_agent: {
+      label: t("flow.runs.status.pausedByAgent"),
+      classes: "border-border bg-muted text-muted-foreground",
+      icon: PauseCircle,
+    },
+    failed: {
+      label: t("flow.runs.status.failed"),
+      classes: "border-red-600/40 bg-red-500/10 text-red-300",
+      icon: CircleAlert,
+    },
+  };
+}
 
 export default function FlowRunsPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const params = useParams<{ id: string }>();
 
@@ -128,7 +134,7 @@ export default function FlowRunsPage() {
       } catch (err) {
         if (!cancelled) {
           console.error(err);
-          toast.error("Couldn't load runs.");
+          toast.error(t("flow.runs.loadFailed"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -137,6 +143,7 @@ export default function FlowRunsPage() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   function toggle(runId: string) {
@@ -158,13 +165,13 @@ export default function FlowRunsPage() {
   if (notFound || !flow) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
-        <p className="text-sm text-muted-foreground">Flow not found.</p>
+        <p className="text-sm text-muted-foreground">{t("flow.runs.notFound")}</p>
         <button
           type="button"
           onClick={() => router.push("/flows")}
           className="text-sm text-primary hover:opacity-80"
         >
-          ← Back to flows
+          {t("flow.runs.back")}
         </button>
       </div>
     );
@@ -180,16 +187,14 @@ export default function FlowRunsPage() {
         <ArrowLeft className="h-3 w-3" />
         {flow.name}
       </button>
-      <h1 className="text-xl font-semibold text-foreground">Runs</h1>
+      <h1 className="text-xl font-semibold text-foreground">{t("flow.runs.title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        The 50 most recent times this flow ran. Expand a row to see the engine&apos;s
-        per-step log.
+        {t("flow.runs.subtitle")}
       </p>
 
       {runs.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed border-border bg-card/50 px-6 py-12 text-center text-sm text-muted-foreground">
-          No runs yet. Trigger the flow from a personal WhatsApp number to see
-          it appear here.
+          {t("flow.runs.empty")}
         </div>
       ) : (
         <div className="mt-6 flex flex-col gap-2">
@@ -219,10 +224,11 @@ function RunCard({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const meta = STATUS_META[run.status];
+  const { t } = useLocale();
+  const meta = getStatusMeta(t)[run.status];
   const StatusIcon = meta.icon;
   const contactLabel =
-    run.contact?.name?.trim() || run.contact?.phone || "Unknown contact";
+    run.contact?.name?.trim() || run.contact?.phone || t("flow.runs.unknownContact");
   const duration = run.ended_at
     ? formatDistanceToNow(new Date(run.ended_at), {
         addSuffix: false,
@@ -251,16 +257,16 @@ function RunCard({
             </Badge>
             {run.status === "active" && run.current_node_key && (
               <code className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                at {run.current_node_key}
+                {t("flow.runs.atNode").replace("{key}", run.current_node_key)}
               </code>
             )}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            <span>Started {format(new Date(run.started_at), "PP p")}</span>
+            <span>{t("flow.runs.started").replace("{date}", format(new Date(run.started_at), "PP p"))}</span>
             {run.reprompt_count > 0 && (
-              <span>· {run.reprompt_count} re-prompts</span>
+              <span>{t("flow.runs.repromptsCount").replace("{count}", String(run.reprompt_count))}</span>
             )}
-            {duration && <span>· ran for {duration}</span>}
+            {duration && <span>{t("flow.runs.ranFor").replace("{duration}", duration)}</span>}
           </div>
         </div>
       </button>
@@ -269,7 +275,7 @@ function RunCard({
           {Object.keys(run.vars).length > 0 && (
             <details className="mb-3">
               <summary className="cursor-pointer text-xs text-muted-foreground">
-                Captured vars ({Object.keys(run.vars).length})
+                {t("flow.runs.capturedVars").replace("{count}", String(Object.keys(run.vars).length))}
               </summary>
               <pre className="mt-2 overflow-x-auto rounded-md bg-background p-2 text-[11px] text-muted-foreground">
                 {JSON.stringify(run.vars, null, 2)}
@@ -279,7 +285,7 @@ function RunCard({
           <div className="flex flex-col gap-1">
             {events.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No events recorded for this run.
+                {t("flow.runs.noEvents")}
               </p>
             ) : (
               events.map((ev, ix) => <EventLine key={ix} ev={ev} />)

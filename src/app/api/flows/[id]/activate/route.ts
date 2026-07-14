@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import { validateFlowForActivation } from '@/lib/flows/validate'
+import { DEFAULT_LOCALE, translate } from '@/lib/i18n'
 
 /**
  * POST /api/flows/[id]/activate
@@ -82,6 +83,9 @@ export async function POST(
         node_type: string
         config: Record<string, unknown>
       }>,
+      // No request-scoped locale on this server route, so validation
+      // messages fall back to the app's default/source language (pt-BR).
+      (key) => translate(DEFAULT_LOCALE, key),
     )
     const blockers = issues.filter((i) => i.severity === 'error')
     if (blockers.length > 0) {
